@@ -84,13 +84,21 @@ def main():
         print("########################################################\n")
         sys.exit(0)
 
+    # build regular expression from ignore_followers
+    replace_newline_regex = re.compile( '\s*\n\s*' )
+    ignore_followers_regex = re.compile( 
+        '^' + replace_newline_regex.sub( '$|^', my_config[group_name]["ignore_followers"] + '$' )
+    )
+
     # Get group member IDs. They can not be fetched directly when
     # connecting to the Mastodon server.
     #
     # limit=sys.maxsize is set here because Pleroma only returns 20 Member if
     # the standard limit=None value is used!
     for member in masto.account_following(my_account["id"], limit=sys.maxsize):
-        my_account["group_member_ids"].append(member.id)
+        # only add member if it does not match a regex from ignore_followers
+        if not ignore_followers_regex.match( member.acct ):
+            my_account["group_member_ids"].append(member.id)
 
     # Do we accept direct messages, public retoots, both or none? This
     # can be set in the configuration.
